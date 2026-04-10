@@ -44,23 +44,24 @@ IA Cloud (chat + recomendaciones)
 ## 🧱 ESTRUCTURA DEL PROYECTO
 
 trash-iq/
+
 ├── index.html
 
-├── css/
+└───── css/
 
-│ ├── base.css -- reset, layout, topbar
+├── base.css -- reset, layout, topbar
 
-│ ├── cards.css -- vista de tarjetas
+├── cards.css -- vista de tarjetas
 
-│ ├── charts.css -- gráficos
+├── charts.css -- gráficos
 
-│ ├── chat.css -- panel de IA
+├── chat.css -- panel de IA
 
-│ ├── sidebar.css -- barra lateral + estado ESP32
+├── sidebar.css -- barra lateral + estado ESP32
 
-│ └── variables.css -- paleta de colores
+└── variables.css -- paleta de colores
 
-└── js/
+└───── js/
 
 ├── app.js -- orquestador principal
 
