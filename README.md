@@ -45,21 +45,37 @@ IA Cloud (chat + recomendaciones)
 
 trash-iq/
 ├── index.html
+
 ├── css/
+
 │ ├── base.css -- reset, layout, topbar
+
 │ ├── cards.css -- vista de tarjetas
+
 │ ├── charts.css -- gráficos
+
 │ ├── chat.css -- panel de IA
+
 │ ├── sidebar.css -- barra lateral + estado ESP32
+
 │ └── variables.css -- paleta de colores
+
 └── js/
+
 ├── app.js -- orquestador principal
+
 ├── charts.js -- gráficos
+
 ├── chat.js -- panel de IA
+
 ├── data.js -- capa de datos para Firebase
+
 ├── mockData.js -- capa de datos de prueba (dev)
+
 ├── state.js -- estados (tema o configuración) en localStorage
+
 └── ui.js -- animaciones, nav, updates en tarjetas
+
 
 
 ## 🔌 ESP32
