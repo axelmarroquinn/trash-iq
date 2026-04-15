@@ -1,3 +1,6 @@
+import { formatMetricValue, getStatValue, WASTE_TYPES } from './data.js';
+import { getMetricMode } from './state.js';
+
 let barChartInstance = null;
 let donutChartInstance = null;
 
@@ -33,7 +36,7 @@ function toggleChartEmptyState(canvasId, emptyId, shouldShowEmpty) {
   empty.classList.toggle('hidden', !shouldShowEmpty);
 }
 
-function renderBarChart(data) {
+export function renderBarChart(data) {
   const metricMode = getMetricMode();
   const hasData = data.hasData !== false;
   toggleChartEmptyState('barChart', 'barChartEmpty', !hasData);
@@ -116,7 +119,7 @@ function renderBarChart(data) {
   });
 }
 
-function renderDonutChart(stats) {
+export function renderDonutChart(stats) {
   const metricMode = getMetricMode();
   const keys = Object.keys(stats);
   const values = keys.map(key => getStatValue(stats[key], metricMode));

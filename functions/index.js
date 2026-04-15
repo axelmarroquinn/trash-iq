@@ -1,32 +1,44 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
+admin.initializeApp();
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+const db = admin.firestore();
+const ALLOWED_CATEGORIES = ['plastico', 'papel', 'organico', 'otros'];
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+exports.recibirResiduo = functions.region('us-central1').https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.set('Allow', 'POST');
+    return res.status(405).json({ error: 'Metodo no permitido' });
+  }
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+  try {
+    const categoria = typeof req.body?.categoria === 'string' ? req.body.categoria.trim().toLowerCase() : '';
+    const peso_g = Number(req.body?.peso_g);
+    const gas_level = Number(req.body?.gas_level);
+
+    if (!ALLOWED_CATEGORIES.includes(categoria)) {
+      return res.status(400).json({ error: 'Categoria invalida' });
+    }
+
+    if (!Number.isFinite(peso_g) || peso_g <= 0) {
+      return res.status(400).json({ error: 'peso_g debe ser un numero positivo' });
+    }
+
+    if (!Number.isFinite(gas_level)) {
+      return res.status(400).json({ error: 'gas_level debe ser numerico' });
+    }
+
+    await db.collection('waste_logs').add({
+      categoria,
+      peso_g,
+      gas_level,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('[Functions] Error guardando residuo:', error);
+    return res.status(500).json({ error: 'No se pudo guardar el residuo' });
+  }
+});

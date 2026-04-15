@@ -10,7 +10,7 @@ const APP_STATE = {
   devMode: true,
 };
 
-function initAppState() {
+export function initAppState() {
   const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
   const savedMetric = localStorage.getItem(STORAGE_KEYS.metricMode);
   const savedDevMode = localStorage.getItem(STORAGE_KEYS.devMode);
@@ -30,34 +30,36 @@ function initAppState() {
   applyTheme(APP_STATE.theme);
 }
 
-function applyTheme(theme) {
+export function applyTheme(theme) {
   APP_STATE.theme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem(STORAGE_KEYS.theme, theme);
 }
 
-function toggleTheme() {
+export function toggleTheme() {
   applyTheme(APP_STATE.theme === 'dark' ? 'light' : 'dark');
 }
 
-function setMetricMode(mode) {
+export function setMetricMode(mode) {
   APP_STATE.metricMode = mode;
   localStorage.setItem(STORAGE_KEYS.metricMode, mode);
 }
 
-function setDevMode(enabled) {
+export function setDevMode(enabled) {
   APP_STATE.devMode = Boolean(enabled);
   localStorage.setItem(STORAGE_KEYS.devMode, String(APP_STATE.devMode));
 }
 
-function getMetricMode() {
+export function getMetricMode() {
   return APP_STATE.metricMode;
 }
 
-function isDarkMode() {
+export function isDarkMode() {
   return APP_STATE.theme === 'dark';
 }
 
-function isDevMode() {
+export function isDevMode() {
   return APP_STATE.devMode;
 }
+
+export { APP_STATE, STORAGE_KEYS };

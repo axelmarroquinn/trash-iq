@@ -1,4 +1,4 @@
-const DEV_MOCK_DATA = {
+export const DEV_MOCK_DATA = {
   current: {
     plastico: { weight: 820, prevWeight: 640, count: 14, prevCount: 11 },
     papel:    { weight: 430, prevWeight: 510, count: 8,  prevCount: 10 },

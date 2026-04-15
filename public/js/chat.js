@@ -1,3 +1,6 @@
+import { getMetricLabel, getWasteKeys, WASTE_TYPES } from './data.js';
+import { getMetricMode, isDevMode } from './state.js';
+
 const AI_CONFIG = {
   endpoint: 'https://api.anthropic.com/v1/messages',
   apiKey: 'TU_API_KEY_AQUI',
@@ -10,7 +13,7 @@ Responde en espanol de forma clara y concisa.
 Cuando menciones cantidades, usa gramos, kilogramos o cantidad de items segun corresponda.
 Enfocate en patrones, recomendaciones de compra y almacenamiento.`;
 
-function initChat() {
+export function initChat() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSendBtn');
 

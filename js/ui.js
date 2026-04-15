@@ -1,11 +1,14 @@
-function setTopbarDate() {
+import { calcVariation, formatMetricCardValue, getPrevStatValue, getStatValue } from './data.js';
+import { getMetricMode, isDarkMode, isDevMode, setDevMode, setMetricMode, toggleTheme } from './state.js';
+
+export function setTopbarDate() {
   const el = document.getElementById('pageDate');
   const now = new Date();
   const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   el.textContent = now.toLocaleDateString('es-GT', opts);
 }
 
-function updateKPICards(stats) {
+export function updateKPICards(stats) {
   const metricMode = getMetricMode();
 
   Object.entries(stats).forEach(([key, stat]) => {
@@ -45,7 +48,7 @@ function animateValue(el, to, duration, formatter) {
   requestAnimationFrame(step);
 }
 
-function renderAlerts(alerts) {
+export function renderAlerts(alerts) {
   const container = document.getElementById('alertsList');
   const empty = document.getElementById('alertsEmpty');
 
@@ -67,7 +70,7 @@ function renderAlerts(alerts) {
   });
 }
 
-function initNavigation() {
+export function initNavigation() {
   const navItems = document.querySelectorAll('.nav-item');
   const views = document.querySelectorAll('.view');
   const pageTitle = document.getElementById('pageTitle');
@@ -97,7 +100,7 @@ function initNavigation() {
   });
 }
 
-function initRefreshButton(reloadFn) {
+export function initRefreshButton(reloadFn) {
   const btn = document.getElementById('refreshBtn');
   btn.addEventListener('click', async () => {
     btn.classList.add('spinning');
@@ -106,7 +109,7 @@ function initRefreshButton(reloadFn) {
   });
 }
 
-function initDeviceStatus() {
+export function initDeviceStatus() {
   const dot = document.getElementById('deviceDot');
   const status = document.getElementById('deviceStatus');
 
@@ -122,7 +125,7 @@ function initDeviceStatus() {
   }, 8000);
 }
 
-function initPreferenceControls(reloadFn) {
+export function initPreferenceControls(reloadFn) {
   const devToggle = document.getElementById('devModeToggle');
   const themeBtn = document.getElementById('themeToggleBtn');
   const metricInputs = document.querySelectorAll('input[name="metricMode"]');
@@ -149,7 +152,7 @@ function initPreferenceControls(reloadFn) {
   });
 }
 
-function syncPreferenceControls() {
+export function syncPreferenceControls() {
   const devToggle = document.getElementById('devModeToggle');
   const themeBtn = document.getElementById('themeToggleBtn');
   const metricInputs = document.querySelectorAll('input[name="metricMode"]');
@@ -170,7 +173,7 @@ function syncPreferenceControls() {
   }
 }
 
-function updateDashboardLabels() {
+export function updateDashboardLabels() {
   const metricMode = getMetricMode();
   const barSubtitle = document.getElementById('barChartSubtitle');
   const donutSubtitle = document.getElementById('donutChartSubtitle');

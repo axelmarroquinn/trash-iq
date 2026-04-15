@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrashIQ - Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+
+  <style>
+    body {
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top, color-mix(in srgb, var(--green-100) 75%, transparent) 0%, transparent 42%),
+        linear-gradient(160deg, var(--surface-bg) 0%, color-mix(in srgb, var(--green-50) 45%, var(--surface-bg)) 100%);
+      padding: 1.5rem;
+    }
+
+    .login-shell {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .login-card {
+      background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: clamp(1.5rem, 4vw, 2.5rem);
+      backdrop-filter: blur(14px);
+    }
+
+    .login-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-brand__logo {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 1rem;
+      background: linear-gradient(145deg, var(--green-700), var(--green-500));
+      color: var(--text-on-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      box-shadow: var(--shadow-md);
+    }
+
+    .login-brand__text h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .login-brand__text p {
+      color: var(--text-secondary);
+      margin-top: 0.35rem;
+      line-height: 1.5;
+    }
+
+    .login-form {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .login-field {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .login-field label {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .login-field input {
+      width: 100%;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+      background: var(--surface-bg);
+      color: var(--text-primary);
+      padding: 0.95rem 1rem;
+      font: inherit;
+      transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+    }
+
+    .login-field input:focus {
+      outline: none;
+      border-color: var(--green-400);
+      box-shadow: 0 0 0 4px rgba(42, 144, 80, 0.14);
+    }
+
+    .login-submit {
+      border: 0;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--green-700), var(--green-500));
+      color: var(--text-on-dark);
+      padding: 1rem 1.1rem;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: transform var(--duration-fast) var(--ease-out), filter var(--duration-fast) var(--ease-out);
+    }
+
+    .login-submit:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+
+    .login-error {
+      background: color-mix(in srgb, var(--color-danger) 10%, var(--surface-card));
+      border: 1px solid color-mix(in srgb, var(--color-danger) 22%, transparent);
+      border-radius: var(--radius-md);
+      color: var(--color-danger);
+      padding: 0.85rem 1rem;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-card">
+      <div class="login-brand">
+        <div class="login-brand__logo">T</div>
+        <div class="login-brand__text">
+          <h1>TrashIQ</h1>
+          <p>Ingresa para revisar el dashboard de residuos y las alertas del sistema.</p>
+        </div>
+      </div>
+
+      <form class="login-form" id="loginForm">
+        <div class="login-field">
+          <label for="email">Correo electronico</label>
+          <input id="email" type="email" autocomplete="email" required />
+        </div>
+
+        <div class="login-field">
+          <label for="password">Contrasena</label>
+          <input id="password" type="password" autocomplete="current-password" required />
+        </div>
+
+        <p class="login-error hidden" id="errorMsg"></p>
+
+        <button class="login-submit" type="submit">Iniciar sesion</button>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

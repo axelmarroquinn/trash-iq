@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/charts.css" />
   <link rel="stylesheet" href="css/chat.css" />
 </head>
-<body>
+<body data-requires-auth="true">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__brand">
       <div class="brand-logo">
@@ -83,7 +83,10 @@
           <i data-lucide="refresh-cw"></i>
         </button>
 
-        <div class="topbar__avatar">AX</div>
+        <button class="topbar__avatar topbar__avatar--button" id="logoutBtn" title="Cerrar sesion">
+          <span>AX</span>
+          <i data-lucide="log-out"></i>
+        </button>
       </div>
     </header>
 
@@ -279,12 +282,14 @@
     </section>
   </main>
 
-  <script src="js/state.js"></script>
-  <script src="js/mockData.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/app.js"></script>
+  <script type="module" src="js/state.js"></script>
+  <script type="module" src="js/mockData.js"></script>
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/data.js"></script>
+  <script type="module" src="js/charts.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/chat.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
