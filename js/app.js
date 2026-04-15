@@ -16,7 +16,9 @@ import {
 } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  protectRoute();
+  const user = await protectRoute();
+  if (!user) return;
+
   initAppState();
   lucide.createIcons();
 

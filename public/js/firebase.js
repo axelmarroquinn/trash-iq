@@ -1,18 +1,18 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
-  apiKey: 'REEMPLAZAR_API_KEY',
+  apiKey: 'AIzaSyBJJh4BnuNfcoWqyeDJkcMEn4nTcktn8GU',
   authDomain: 'trash-iq-umg.firebaseapp.com',
   projectId: 'trash-iq-umg',
-  storageBucket: 'trash-iq-umg.appspot.com',
-  messagingSenderId: 'REEMPLAZAR_MESSAGING_SENDER_ID',
-  appId: 'REEMPLAZAR_APP_ID',
-  measurementId: 'REEMPLAZAR_MEASUREMENT_ID',
+  storageBucket: 'trash-iq-umg.firebasestorage.app',
+  messagingSenderId: '542439315774',
+  appId: '1:542439315774:web:8862053821b28b9842746f',
 };
 
 const app = initializeApp(firebaseConfig);
 
-export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
+export { app, firebaseConfig };
