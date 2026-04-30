@@ -62,15 +62,13 @@ async function preguntarDashboard(pregunta) {
 }
 
 function formatearRespuestaDashboard(data) {
-  const respuesta = limpiarRespuestaIA(data.respuesta);
-
   if (data.total_peso_g === null || data.total_registros === null) {
-    return respuesta;
+    return data.respuesta;
   }
-
   const totalPeso = Number(data.total_peso_g).toLocaleString('es-GT');
   const totalRegistros = Number(data.total_registros).toLocaleString('es-GT');
-  return `${respuesta} Total: ${totalPeso} g en ${totalRegistros} registros.`;
+  const labelRegistros = data.total_registros === 1 ? 'registro' : 'registros';
+  return `${data.respuesta} Total: ${totalPeso} g en ${totalRegistros} ${labelRegistros}.`;
 }
 
 function limpiarRespuestaIA(text) {

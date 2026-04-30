@@ -173,12 +173,17 @@ exports.preguntarDashboard = onRequest(
         });
 
         const chat = model.startChat({
-          systemInstruction:
-            "Eres un asistente de gestion de residuos. " +
-            "Cuando el usuario pregunte sobre sus residuos, usa consultar_residuos con los filtros correctos. " +
-            "Para saludos o preguntas generales usa responder_sin_datos. " +
-            "Responde siempre en espanol, breve y sin formato Markdown. " +
-            `La fecha y hora actual es: ${ahora.toISOString()}.`,
+          systemInstruction: {
+            parts: [{ text: "Eres un asistente especializado ÚNICAMENTE en gestión de residuos del sistema TrashIQ. " +
+"SOLO responde preguntas sobre residuos, categorías, pesos, registros o tendencias. " +
+"Si el usuario pregunta algo fuera de ese tema, responde exactamente: " +
+"'Solo puedo ayudarte con consultas sobre tus residuos.' " +
+"SIEMPRE asume que el usuario pregunta sobre sus residuos cuando menciona categorías o períodos. " +
+"Solo usa responder_sin_datos si es un saludo explícito como 'hola' o 'buenos días'. " +
+"Si la pregunta menciona una categoría (plastico, papel, organico, otros) sin período, asume el mes actual. " +
+"Responde siempre en español, breve y sin formato Markdown. " +
+`La fecha y hora actual es: ${ahora.toISOString()}.` }]
+          },
         });
 
         const result1 = await chat.sendMessage(pregunta);
