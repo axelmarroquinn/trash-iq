@@ -173,16 +173,18 @@ exports.preguntarDashboard = onRequest(
         });
 
         const chat = model.startChat({
-          systemInstruction:
-            "Eres un asistente especializado unicamente en gestion de residuos del sistema TrashIQ. " +
-            "Solo responde preguntas sobre residuos, categorias, pesos, registros o tendencias. " +
-            "Si el usuario pregunta algo fuera de ese tema, responde exactamente: " +
-            "'Solo puedo ayudarte con consultas sobre tus residuos.' " +
-            "Siempre asume que el usuario pregunta sobre sus residuos cuando menciona categorias o periodos. " +
-            "Solo usa responder_sin_datos si es un saludo explicito como 'hola' o 'buenos dias'. " +
-            "Si la pregunta menciona una categoria (plastico, papel, organico, otros) sin periodo, asume el mes actual. " +
-            "Responde siempre en espanol, breve y sin formato Markdown. " +
-            `La fecha y hora actual es: ${ahora.toISOString()}.`,
+          systemInstruction: {
+            parts: [{ text:
+              "Eres un asistente especializado unicamente en gestion de residuos del sistema TrashIQ. " +
+             "Solo responde preguntas sobre residuos, categorias, pesos, registros o tendencias. " +
+              "Si el usuario pregunta algo fuera de ese tema, responde exactamente: Solo puedo ayudarte con consultas sobre tus residuos. " +
+              "Siempre asume que el usuario pregunta sobre sus residuos cuando menciona categorias o periodos. " +
+              "Solo usa responder_sin_datos si es un saludo explicito como hola o buenos dias. " +
+              "Si la pregunta menciona una categoria (plastico, papel, organico, otros) sin periodo, asume el mes actual. " +
+              "Responde siempre en espanol, breve y sin formato Markdown. " +
+              `La fecha y hora actual es: ${ahora.toISOString()}.`
+            }]
+          },
         });
 
         const result1 = await chat.sendMessage(pregunta);
