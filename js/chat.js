@@ -62,9 +62,23 @@ async function preguntarDashboard(pregunta) {
 }
 
 function formatearRespuestaDashboard(data) {
-  const totalPeso = Number(data.total_peso_g || 0).toLocaleString('es-GT');
-  const totalRegistros = Number(data.total_registros || 0).toLocaleString('es-GT');
-  return `${data.respuesta} Total: ${totalPeso} g en ${totalRegistros} registros.`;
+  const respuesta = limpiarRespuestaIA(data.respuesta);
+
+  if (data.total_peso_g === null || data.total_registros === null) {
+    return respuesta;
+  }
+
+  const totalPeso = Number(data.total_peso_g).toLocaleString('es-GT');
+  const totalRegistros = Number(data.total_registros).toLocaleString('es-GT');
+  return `${respuesta} Total: ${totalPeso} g en ${totalRegistros} registros.`;
+}
+
+function limpiarRespuestaIA(text) {
+  return String(text || '')
+    .replace(/\*\*/g, '')
+    .replace(/[*_`#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function appendMessage(role, text) {

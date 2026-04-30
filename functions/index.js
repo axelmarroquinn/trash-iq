@@ -119,33 +119,117 @@ exports.preguntarDashboard = onRequest(
           return res.status(400).json({ error: "pregunta invalida" });
         }
 
-        const filtros = interpretarPreguntaDashboard(pregunta);
+        const ahora = new Date();
+
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: "consultar_residuos",
+                  description:
+                    "Consulta registros de residuos en Firestore segun filtros de fecha y categoria.",
+                  parameters: {
+                    type: "OBJECT",
+                    properties: {
+                      categoria: {
+                        type: "STRING",
+                        description:
+                          "Categoria de residuo: plastico, papel, organico, otros. Omitir si se quiere todo.",
+                        enum: ["plastico", "papel", "organico", "otros"],
+                        nullable: true,
+                      },
+                      desde: {
+                        type: "STRING",
+                        description: `Fecha inicio en ISO 8601. Hoy es ${ahora.toISOString()}.`,
+                      },
+                      hasta: {
+                        type: "STRING",
+                        description: "Fecha fin en ISO 8601.",
+                      },
+                    },
+                    required: ["desde", "hasta"],
+                  },
+                },
+                {
+                  name: "responder_sin_datos",
+                  description:
+                    "Usala cuando la pregunta es un saludo, pregunta general o no requiere consultar datos.",
+                  parameters: {
+                    type: "OBJECT",
+                    properties: {
+                      mensaje: {
+                        type: "STRING",
+                        description: "Respuesta directa al usuario.",
+                      },
+                    },
+                    required: ["mensaje"],
+                  },
+                },
+              ],
+            },
+          ],
+        });
+
+        const chat = model.startChat({
+          systemInstruction:
+            "Eres un asistente de gestion de residuos. " +
+            "Cuando el usuario pregunte sobre sus residuos, usa consultar_residuos con los filtros correctos. " +
+            "Para saludos o preguntas generales usa responder_sin_datos. " +
+            "Responde siempre en espanol, breve y sin formato Markdown. " +
+            `La fecha y hora actual es: ${ahora.toISOString()}.`,
+        });
+
+        const result1 = await chat.sendMessage(pregunta);
+        const call = result1.response.functionCalls()?.[0];
+
+        if (!call || call.name === "responder_sin_datos") {
+          const mensaje =
+            call?.args?.mensaje ||
+            "Hola. Puedes preguntarme sobre tus residuos. Por ejemplo: Cuanto tire esta semana?";
+          return res.status(200).json({
+            respuesta: limpiarRespuestaIA(mensaje),
+            total_peso_g: null,
+            total_registros: null,
+          });
+        }
+
+        const { categoria, desde, hasta } = call.args;
+        const desdeDate = new Date(desde);
+        const hastaDate = new Date(hasta);
+
+        if (isNaN(desdeDate.getTime()) || isNaN(hastaDate.getTime())) {
+          return res.status(400).json({ error: "rango de fechas invalido" });
+        }
+
         let query = db
           .collection("waste_logs")
-          .where("timestamp", ">=", filtros.desde)
-          .where("timestamp", "<=", filtros.hasta);
+          .where("timestamp", ">=", desdeDate)
+          .where("timestamp", "<=", hastaDate);
 
-        if (filtros.categoria) {
-          query = query.where("categoria", "==", filtros.categoria);
+        if (categoria) {
+          query = query.where("categoria", "==", categoria);
         }
 
         const snapshot = await query.get();
-        const totalPeso = snapshot.docs.reduce((total, doc) => {
-          const peso = Number(doc.data().peso_g) || 0;
-          return total + peso;
-        }, 0);
-
-        const total_peso_g = redondear(totalPeso);
+        const total_peso_g = redondear(
+          snapshot.docs.reduce((sum, doc) => {
+            return sum + (Number(doc.data().peso_g) || 0);
+          }, 0)
+        );
         const total_registros = snapshot.size;
 
-        const prompt = construirPromptPreguntaDashboard(
-          pregunta,
-          total_peso_g,
-          total_registros
-        );
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent(prompt);
-        const respuesta = result.response.text();
+        const result2 = await chat.sendMessage([
+          {
+            functionResponse: {
+              name: "consultar_residuos",
+              response: { total_peso_g, total_registros },
+            },
+          },
+        ]);
+
+        const respuesta = limpiarRespuestaIA(result2.response.text());
 
         return res.status(200).json({
           respuesta,
@@ -161,82 +245,6 @@ exports.preguntarDashboard = onRequest(
     });
   }
 );
-
-function interpretarPreguntaDashboard(pregunta) {
-  const texto = normalizarTexto(pregunta);
-  const ahora = new Date();
-  let desde = new Date(ahora);
-  let hasta = new Date(ahora);
-  let categoria = null;
-
-  const categoriasPermitidas = ["plastico", "papel", "organico", "otros"];
-  categoria = categoriasPermitidas.find((item) => texto.includes(item)) || null;
-
-  const mesDetectado = detectarMes(texto);
-
-  if (texto.includes("hoy")) {
-    desde = new Date(ahora);
-    desde.setHours(ahora.getHours() - 24);
-  } else if (texto.includes("semana")) {
-    desde = new Date(ahora);
-    desde.setDate(ahora.getDate() - 7);
-  } else if (texto.includes("mes") || mesDetectado !== null) {
-    const mes = mesDetectado !== null ? mesDetectado : ahora.getMonth();
-    const anio = ahora.getFullYear();
-    desde = new Date(anio, mes, 1, 0, 0, 0, 0);
-    hasta =
-      mesDetectado !== null
-        ? new Date(anio, mes + 1, 0, 23, 59, 59, 999)
-        : ahora;
-  } else {
-    desde = new Date(ahora);
-    desde.setDate(ahora.getDate() - 7);
-  }
-
-  return { categoria, desde, hasta };
-}
-
-function construirPromptPreguntaDashboard(
-  pregunta,
-  total_peso_g,
-  total_registros
-) {
-  return [
-    "Responde en espanol de forma breve, clara y util para un dashboard de residuos.",
-    "No clasifiques residuos ni inventes datos; usa solo los totales entregados.",
-    "",
-    `Pregunta original: ${pregunta}`,
-    `total_peso_g: ${total_peso_g}`,
-    `total_registros: ${total_registros}`,
-  ].join("\n");
-}
-
-function detectarMes(texto) {
-  const meses = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
-  ];
-
-  const indice = meses.findIndex((mes) => texto.includes(mes));
-  return indice === -1 ? null : indice;
-}
-
-function normalizarTexto(texto) {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
 
 function construirMetricas(docs, periodo, desde, hasta) {
   const metricas = {
@@ -325,4 +333,12 @@ function normalizarFecha(timestamp) {
 
 function redondear(valor) {
   return Math.round(valor * 100) / 100;
+}
+
+function limpiarRespuestaIA(texto) {
+  return String(texto || "")
+    .replace(/\*\*/g, "")
+    .replace(/[*_`#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
