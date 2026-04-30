@@ -1,17 +1,5 @@
-import { getMetricLabel, getWasteKeys, WASTE_TYPES } from './data.js';
-import { getMetricMode, isDevMode } from './state.js';
-
-const AI_CONFIG = {
-  endpoint: 'https://api.anthropic.com/v1/messages',
-  apiKey: 'TU_API_KEY_AQUI',
-  model: 'claude-sonnet-4-20250514',
-  maxTokens: 300,
-};
-
-const SYSTEM_PROMPT = `Eres un asistente de analisis de residuos domesticos.
-Responde en espanol de forma clara y concisa.
-Cuando menciones cantidades, usa gramos, kilogramos o cantidad de items segun corresponda.
-Enfocate en patrones, recomendaciones de compra y almacenamiento.`;
+const PREGUNTAR_DASHBOARD_ENDPOINT =
+  'https://preguntardashboard-epnwwyvrcq-uc.a.run.app';
 
 export function initChat() {
   const input = document.getElementById('chatInput');
@@ -39,96 +27,44 @@ async function handleSend() {
   const typingEl = appendTyping();
 
   try {
-    const context = buildDataContext();
-    const response = await callAI(text, context);
+    const response = await preguntarDashboard(text);
     typingEl.remove();
     appendMessage('ai', response);
   } catch (error) {
     typingEl.remove();
-    appendMessage('ai', `Error al conectar con la IA: ${error.message}.`);
+    appendMessage('ai', 'Error al consultar IA');
   } finally {
     sendBtn.disabled = false;
     input.focus();
   }
 }
 
-function buildDataContext() {
-  const types = getWasteKeys();
-  const metricMode = getMetricMode();
-  const lines = types.map(key => {
-    const value = document.getElementById(`val-${key}`)?.textContent || 'N/A';
-    const badge = document.getElementById(`badge-${key}`)?.textContent || 'N/A';
-    return `- ${WASTE_TYPES[key].label}: ${value} (variacion: ${badge})`;
-  });
-
-  return [
-    `Modo dev: ${isDevMode() ? 'activo' : 'apagado'}`,
-    `Vista actual: ${getMetricLabel(metricMode)}`,
-    'Datos visibles en dashboard:',
-    lines.join('\n'),
-  ].join('\n');
-}
-
-async function callAI(userMessage, dataContext) {
-  /*
-  const response = await fetch(AI_CONFIG.endpoint, {
+async function preguntarDashboard(pregunta) {
+  const response = await fetch(PREGUNTAR_DASHBOARD_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': AI_CONFIG.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({
-      model: AI_CONFIG.model,
-      max_tokens: AI_CONFIG.maxTokens,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: `${dataContext}\n\nPregunta del usuario: ${userMessage}`,
-        }
-      ]
-    })
+    body: JSON.stringify({ pregunta }),
   });
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || `HTTP ${response.status}`);
+    throw new Error(`HTTP ${response.status}`);
   }
 
   const data = await response.json();
-  return data.content[0]?.text || 'Sin respuesta.';
-  */
 
-  await new Promise(resolve => setTimeout(resolve, 900));
-  return mockAIResponse(userMessage, dataContext);
+  if (!data || typeof data.respuesta !== 'string') {
+    throw new Error('Respuesta invalida');
+  }
+
+  return formatearRespuestaDashboard(data);
 }
 
-function mockAIResponse(question) {
-  const q = question.toLowerCase();
-
-  if (!isDevMode()) {
-    return 'El modo dev esta apagado, asi que el dashboard esta limpio y no tengo datos historicos de prueba para analizar todavia.';
-  }
-
-  if (getMetricMode() === 'count') {
-    if (q.includes('mas') || q.includes('mayor')) {
-      return 'En cantidad de items, lo organico sigue liderando. Esta vista te ayuda a comparar volumen de piezas en lugar de peso.';
-    }
-
-    return 'Ahora mismo estas viendo el dashboard por cantidad de items. Si quieres, puedo ayudarte a interpretar esas diferencias por categoria.';
-  }
-
-  if (q.includes('mas') || q.includes('mayor')) {
-    return 'Segun los datos de prueba, el residuo organico es el que mas peso acumula esta semana. Conviene revisar porciones y almacenamiento.';
-  }
-
-  if (q.includes('plastico')) {
-    return 'En los datos de prueba, el plastico viene por encima de la semana anterior. Podrias priorizar compras con menos empaque.';
-  }
-
-  return 'Puedo ayudarte a leer el dashboard, comparar categorias y sugerir mejoras para reducir desperdicio.';
+function formatearRespuestaDashboard(data) {
+  const totalPeso = Number(data.total_peso_g || 0).toLocaleString('es-GT');
+  const totalRegistros = Number(data.total_registros || 0).toLocaleString('es-GT');
+  return `${data.respuesta} Total: ${totalPeso} g en ${totalRegistros} registros.`;
 }
 
 function appendMessage(role, text) {
