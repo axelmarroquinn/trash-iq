@@ -1,5 +1,5 @@
 import { calcVariation, formatMetricCardValue, getPrevStatValue, getStatValue } from './data.js';
-import { getMetricMode, isDarkMode, isDevMode, setDevMode, setMetricMode, toggleTheme } from './state.js';
+import { getMetricMode, isDarkMode, setMetricMode, toggleTheme } from './state.js';
 
 export function setTopbarDate() {
   const el = document.getElementById('pageDate');
@@ -113,28 +113,13 @@ export function initDeviceStatus() {
   const dot = document.getElementById('deviceDot');
   const status = document.getElementById('deviceStatus');
 
-  setInterval(() => {
-    const online = Math.random() > 0.08;
-    if (online) {
-      dot.classList.remove('offline');
-      status.textContent = 'Conectado';
-    } else {
-      dot.classList.add('offline');
-      status.textContent = 'Sin senal';
-    }
-  }, 8000);
+  dot.classList.remove('offline');
+  status.textContent = 'Conectado';
 }
 
 export function initPreferenceControls(reloadFn) {
-  const devToggle = document.getElementById('devModeToggle');
   const themeBtn = document.getElementById('themeToggleBtn');
   const metricInputs = document.querySelectorAll('input[name="metricMode"]');
-
-  devToggle.addEventListener('change', async event => {
-    setDevMode(event.target.checked);
-    syncPreferenceControls();
-    await reloadFn();
-  });
 
   themeBtn.addEventListener('click', async () => {
     toggleTheme();
@@ -153,14 +138,9 @@ export function initPreferenceControls(reloadFn) {
 }
 
 export function syncPreferenceControls() {
-  const devToggle = document.getElementById('devModeToggle');
   const themeBtn = document.getElementById('themeToggleBtn');
   const metricInputs = document.querySelectorAll('input[name="metricMode"]');
   const iconName = isDarkMode() ? 'sun-medium' : 'moon-star';
-
-  if (devToggle) {
-    devToggle.checked = isDevMode();
-  }
 
   metricInputs.forEach(input => {
     input.checked = input.value === getMetricMode();

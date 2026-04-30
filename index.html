@@ -69,12 +69,6 @@
       </div>
 
       <div class="topbar__right">
-        <label class="toggle-pill" for="devModeToggle" title="Mostrar datos de desarrollo">
-          <input type="checkbox" id="devModeToggle" />
-          <span class="toggle-pill__control"></span>
-          <span class="toggle-pill__text">(dev)</span>
-        </label>
-
         <button class="topbar__btn" id="themeToggleBtn" title="Cambiar modo oscuro">
           <i data-lucide="moon-star"></i>
         </button>
@@ -166,7 +160,7 @@
           </div>
           <div class="chart-wrapper">
             <canvas id="barChart"></canvas>
-            <div class="chart-empty hidden" id="barChartEmpty">Activa el modo dev para ver datos de prueba.</div>
+            <div class="chart-empty hidden" id="barChartEmpty">No hay datos reales para mostrar.</div>
           </div>
         </div>
 
@@ -192,7 +186,7 @@
             Alertas del sistema
           </h3>
           <ul class="alerts-list" id="alertsList"></ul>
-          <div class="panel-empty hidden" id="alertsEmpty">Las alertas de desarrollo solo aparecen cuando el modo dev esta activo.</div>
+          <div class="panel-empty hidden" id="alertsEmpty">No hay alertas reales para mostrar.</div>
         </div>
 
         <div class="panel panel--chat">
@@ -269,21 +263,11 @@
           </div>
         </div>
 
-        <div class="settings-card">
-          <div class="settings-card__header">
-            <h2>Modo beta</h2>
-            <p>Los datos mock viven separados del flujo real y se activan solo con el toggle dev.</p>
-          </div>
-          <div class="settings-note">
-            Cuando el toggle <strong>(dev)</strong> esta apagado, el dashboard queda limpio para integrarse con datos reales mas adelante.
-          </div>
-        </div>
       </div>
     </section>
   </main>
 
   <script type="module" src="js/state.js"></script>
-  <script type="module" src="js/mockData.js"></script>
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/data.js"></script>
   <script type="module" src="js/charts.js"></script>

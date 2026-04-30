@@ -136,14 +136,6 @@ exports.preguntarDashboard = onRequest(
       const total_peso_g = redondear(totalPeso);
       const total_registros = snapshot.size;
 
-      if (process.env.NODE_ENV === "development") {
-        return res.status(200).json({
-          respuesta: construirRespuestaMock(pregunta, total_peso_g, total_registros),
-          total_peso_g,
-          total_registros,
-        });
-      }
-
       const prompt = construirPromptPreguntaDashboard(
         pregunta,
         total_peso_g,
@@ -214,13 +206,6 @@ function construirPromptPreguntaDashboard(
     `total_peso_g: ${total_peso_g}`,
     `total_registros: ${total_registros}`,
   ].join("\n");
-}
-
-function construirRespuestaMock(pregunta, total_peso_g, total_registros) {
-  return [
-    "Modo desarrollo: respuesta simulada para el dashboard.",
-    `Para la pregunta "${pregunta}", se encontraron ${total_registros} registros con un total de ${total_peso_g} g.`,
-  ].join(" ");
 }
 
 function detectarMes(texto) {

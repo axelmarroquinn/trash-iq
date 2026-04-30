@@ -1,7 +1,6 @@
 import { collection, getDocs, limit as limitDocs, orderBy, query } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { db } from './firebase.js';
-import { DEV_MOCK_DATA } from './mockData.js';
-import { getMetricMode, isDevMode } from './state.js';
+import { getMetricMode } from './state.js';
 
 export const WASTE_TYPES = {
   plastico: { label: 'Plastico', color: '#C73A3A' },
@@ -44,12 +43,6 @@ function createEmptyChartData(range = 'week') {
 }
 
 export async function fetchCurrentStats() {
-  await delay(180);
-
-  if (isDevMode()) {
-    return structuredClone(DEV_MOCK_DATA.current);
-  }
-
   const stats = createEmptyStats();
   const snapshot = await getDocs(collection(db, 'waste_logs'));
 
@@ -70,16 +63,6 @@ export async function fetchCurrentStats() {
 }
 
 export async function fetchChartData(range = 'week', metricMode = getMetricMode()) {
-  await delay(160);
-
-  if (isDevMode()) {
-    const data = DEV_MOCK_DATA.charts[metricMode]?.[range] || DEV_MOCK_DATA.charts[metricMode]?.week;
-    return {
-      hasData: true,
-      ...structuredClone(data),
-    };
-  }
-
   const chartData = createEmptyChartData(range);
   const config = getChartRangeConfig(range, chartData.labels);
   if (config.labels) {
@@ -118,12 +101,6 @@ export async function fetchChartData(range = 'week', metricMode = getMetricMode(
 }
 
 export async function fetchAlerts() {
-  await delay(120);
-
-  if (isDevMode()) {
-    return structuredClone(DEV_MOCK_DATA.alerts);
-  }
-
   const alertsQuery = query(
     collection(db, 'insights'),
     orderBy('timestamp', 'desc'),
@@ -177,10 +154,6 @@ export function formatMetricCardValue(value, metricMode = getMetricMode()) {
 
 export function getMetricLabel(metricMode = getMetricMode()) {
   return metricMode === 'count' ? 'cantidad de items' : 'peso';
-}
-
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function normalizeCategory(category) {
