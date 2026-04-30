@@ -13,7 +13,7 @@ exports.recibirResiduo = onRequest(
   { region: "us-central1" },
   async (req, res) => {
     if (req.method !== "POST") {
-      return res.status(405).json({ error: "Método no permitido" });
+      return res.status(405).json({ error: "Metodo no permitido" });
     }
 
     const { objeto, categoria, peso_g, gas_level, timestamp } = req.body;
@@ -25,22 +25,22 @@ exports.recibirResiduo = onRequest(
     }
 
     if (!categoriasPermitidas.includes(categoria)) {
-      return res.status(400).json({ error: "Categoría inválida" });
+      return res.status(400).json({ error: "Categoria invalida" });
     }
 
     const peso = parseFloat(peso_g);
     if (isNaN(peso) || peso <= 0) {
-      return res.status(400).json({ error: "peso_g inválido" });
+      return res.status(400).json({ error: "peso_g invalido" });
     }
 
     const gas = parseFloat(gas_level);
     if (isNaN(gas) || gas < 0 || gas > 1) {
-      return res.status(400).json({ error: "gas_level inválido" });
+      return res.status(400).json({ error: "gas_level invalido" });
     }
 
     const fecha = new Date(timestamp);
     if (!timestamp || isNaN(fecha.getTime())) {
-      return res.status(400).json({ error: "timestamp inválido" });
+      return res.status(400).json({ error: "timestamp invalido" });
     }
 
     try {
@@ -173,17 +173,16 @@ exports.preguntarDashboard = onRequest(
         });
 
         const chat = model.startChat({
-          systemInstruction: {
-            parts: [{ text: "Eres un asistente especializado ÚNICAMENTE en gestión de residuos del sistema TrashIQ. " +
-"SOLO responde preguntas sobre residuos, categorías, pesos, registros o tendencias. " +
-"Si el usuario pregunta algo fuera de ese tema, responde exactamente: " +
-"'Solo puedo ayudarte con consultas sobre tus residuos.' " +
-"SIEMPRE asume que el usuario pregunta sobre sus residuos cuando menciona categorías o períodos. " +
-"Solo usa responder_sin_datos si es un saludo explícito como 'hola' o 'buenos días'. " +
-"Si la pregunta menciona una categoría (plastico, papel, organico, otros) sin período, asume el mes actual. " +
-"Responde siempre en español, breve y sin formato Markdown. " +
-`La fecha y hora actual es: ${ahora.toISOString()}.` }]
-          },
+          systemInstruction:
+            "Eres un asistente especializado unicamente en gestion de residuos del sistema TrashIQ. " +
+            "Solo responde preguntas sobre residuos, categorias, pesos, registros o tendencias. " +
+            "Si el usuario pregunta algo fuera de ese tema, responde exactamente: " +
+            "'Solo puedo ayudarte con consultas sobre tus residuos.' " +
+            "Siempre asume que el usuario pregunta sobre sus residuos cuando menciona categorias o periodos. " +
+            "Solo usa responder_sin_datos si es un saludo explicito como 'hola' o 'buenos dias'. " +
+            "Si la pregunta menciona una categoria (plastico, papel, organico, otros) sin periodo, asume el mes actual. " +
+            "Responde siempre en espanol, breve y sin formato Markdown. " +
+            `La fecha y hora actual es: ${ahora.toISOString()}.`,
         });
 
         const result1 = await chat.sendMessage(pregunta);

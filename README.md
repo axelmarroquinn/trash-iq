@@ -1,95 +1,169 @@
-# ♻️ TRASHIQ — SISTEMA INTELIGENTE DE RESIDUOS
+# TrashIQ - Sistema inteligente de residuos
 
-## 🧠 DESCRIPCIÓN
-- Sistema embebido + cloud que convierte basura en datos
-- Registra tipo, peso y demás información importante
-- Genera alertas sobre hábitos de consumo
-- Integra ESP32 + Firebase + Dashboard + IA
+TrashIQ registra residuos detectados por un ESP32, almacena los datos reales en Firestore y los presenta en un dashboard web protegido con Firebase Auth. La IA no clasifica residuos: Gemini se usa solo para generar analisis e insights bajo demanda a partir de datos ya registrados.
 
-## ⚙️ ARQUITECTURA
+## Arquitectura
 
-Dashboard (Frontend)
-↓
-Firebase Hosting
-↓
-Firestore (DB)
-↓
-ESP32 (sensores + edge AI)
-↓
-IA Cloud (chat + recomendaciones)
+```text
+ESP32 + TensorFlow
+  -> Firebase Functions: recibirResiduo
+  -> Firestore: waste_logs
+  -> Firebase Hosting: dashboard
+  -> Firebase Functions + Gemini: analisis y preguntas del dashboard
+```
 
-## 📊 DASHBOARD
-- Categorías fijas:
-  - Plástico (rojo)
-  - Papel (gris)
-  - Orgánico (verde)
-  - Otros (marrón)
-- Componentes:
-  - KPI cards con animación + variaciones
-  - Gráfica de barras (semana / mes)
-  - Gráfica de pastel (distribución total)
-  - Panel de alertas dinámico
-  - Módulo “Consultar a la IA” (mock listo)
-- Alertas:
-  - 🔴 Rojo → crítico
-  - 🟡 Amarillo → advertencias
-  - 🟢 Verde → informativo
+## Datos en Firestore
 
-## ⚙️ CONFIGURACIÓN
-- Vista por:
-  - Peso (g / kg)
-  - Cantidad de ítems
-- Persistencia en localStorage para testing
+La coleccion principal es `waste_logs`. Cada documento debe contener:
 
-## 🧱 ESTRUCTURA DEL PROYECTO
+```json
+{
+  "objeto": "botella",
+  "categoria": "plastico",
+  "peso_g": 120,
+  "gas_level": 0.35,
+  "timestamp": "Firestore Timestamp"
+}
+```
 
-trash-iq/
+Categorias soportadas:
 
-├── index.html
+- `plastico`
+- `papel`
+- `organico`
+- `otros`
 
-└───── css/
+## Frontend
 
-├── base.css -- reset, layout, topbar
+Firebase Hosting sirve la carpeta `public/`.
 
-├── cards.css -- vista de tarjetas
+Elementos principales:
 
-├── charts.css -- gráficos
+- `public/index.html`: dashboard principal.
+- `public/login.html`: acceso con Firebase Auth.
+- `public/css/`: estilos del layout, sidebar, cards, graficas y chat.
+- `public/js/app.js`: orquestador del dashboard.
+- `public/js/auth.js`: proteccion de rutas, login y logout.
+- `public/js/firebase.js`: inicializacion de Firebase Web SDK.
+- `public/js/data.js`: lectura real de Firestore, sin datos simulados.
+- `public/js/charts.js`: graficas Chart.js.
+- `public/js/ui.js`: navegacion, tema, tarjetas KPI y alertas.
+- `public/js/chat.js`: integracion con `preguntarDashboard`.
 
-├── chat.css -- panel de IA
+Tambien existe una copia de trabajo en la raiz (`index.html`, `css/`, `js/`). Para despliegue, mantener sincronizada la version de `public/`.
 
-├── sidebar.css -- barra lateral + estado ESP32
+## Dashboard
 
-└── variables.css -- paleta de colores
+El dashboard usa exclusivamente datos reales de Firestore.
 
-└───── js/
+Funciones visibles:
 
-├── app.js -- orquestador principal
+- KPI por categoria.
+- Comparacion de ultimos 7 dias contra los 7 dias anteriores.
+- Grafica semanal o mensual.
+- Distribucion por categoria.
+- Alertas desde la coleccion `insights`.
+- Preguntas en lenguaje natural con la card "Consultar a la IA".
+- Preferencia de vista por peso o por cantidad de items.
+- Tema claro/oscuro persistido en `localStorage`.
 
-├── charts.js -- gráficos
+No existe modo dev ni archivos de datos simulados.
 
-├── chat.js -- panel de IA
+## Firebase Functions
 
-├── data.js -- capa de datos para Firebase
+El codigo vive en `functions/index.js`.
 
-├── mockData.js -- capa de datos de prueba (dev)
+Funciones HTTP:
 
-├── state.js -- estados (tema o configuración) en localStorage
+- `recibirResiduo`: ingesta desde el ESP32. Valida `objeto`, `categoria`, `peso_g`, `gas_level` y `timestamp`, y guarda en `waste_logs`.
+- `analizarDashboard`: consulta metricas agregadas de `waste_logs` y pide a Gemini un analisis para el dashboard.
+- `preguntarDashboard`: recibe `{ pregunta: string }`, usa Gemini function calling para decidir si debe consultar Firestore o responder sin datos, y devuelve:
 
-└── ui.js -- animaciones, nav, updates en tarjetas
+```json
+{
+  "respuesta": "texto en espanol",
+  "total_peso_g": 120,
+  "total_registros": 3
+}
+```
 
+Para saludos o preguntas generales, `total_peso_g` y `total_registros` pueden ser `null`.
 
+## Variables de entorno
 
-## 🔌 ESP32
-- Lectura de sensores
-- Clasificación por imagen (edge AI)
-- Construcción JSON
-- Envío a Firebase
-- Conexión no bloqueante + auto-reconnect
+Crear `functions/.env`:
 
-## 🚧 ESTADO
-- ✅ Dashboard funcional (mock)
-- ✅ Arquitectura modular
-- ✅ Persistencia local
-- ⚙️ Firebase en integración
-- ⚙️ ESP32 → cloud en progreso
-- ⚙️ IA real en progreso
+```env
+GEMINI_API_KEY=YOUR_API_KEY_HERE
+```
+
+`functions/.env` y `functions/.env.production` estan ignorados por Git.
+
+## Instalacion
+
+```bash
+cd functions
+npm install
+```
+
+Dependencias principales de Functions:
+
+- `firebase-admin`
+- `firebase-functions`
+- `@google/generative-ai`
+- `dotenv`
+- `cors`
+
+## Desarrollo local
+
+```bash
+firebase emulators:start
+```
+
+O solo Functions:
+
+```bash
+cd functions
+npm run serve
+```
+
+## Deploy
+
+Hosting:
+
+```bash
+firebase deploy --only hosting
+```
+
+Functions:
+
+```bash
+firebase deploy --only functions
+```
+
+Solo la funcion de preguntas:
+
+```bash
+firebase deploy --only functions:preguntarDashboard
+```
+
+Si Firebase CLI pide reautenticacion:
+
+```bash
+firebase login --reauth
+```
+
+## Notas de seguridad
+
+- La API key de Gemini se lee desde variables de entorno.
+- El archivo `.env` no debe subirse al repositorio.
+- Las restricciones de API key se gestionan en Google Cloud Console.
+- Revisar y endurecer `firestore.rules` antes de produccion.
+
+## Estado actual
+
+- Dashboard conectado a Firestore real.
+- Modo dev y datos simulados eliminados.
+- IA integrada bajo demanda para analisis y preguntas.
+- ESP32 envia datos procesados, incluyendo `objeto`.
+- Gemini no clasifica residuos ni modifica documentos automaticamente.

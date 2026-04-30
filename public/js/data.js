@@ -45,18 +45,27 @@ function createEmptyChartData(range = 'week') {
 export async function fetchCurrentStats() {
   const stats = createEmptyStats();
   const snapshot = await getDocs(collection(db, 'waste_logs'));
+  const now = new Date();
+  const currentStart = getStartOfDay(now);
+  currentStart.setDate(currentStart.getDate() - 6);
+  const previousStart = new Date(currentStart);
+  previousStart.setDate(previousStart.getDate() - 7);
 
   snapshot.forEach(docSnapshot => {
     const data = docSnapshot.data() || {};
     const category = normalizeCategory(data.categoria);
     const weight = normalizePositiveNumber(data.peso_g);
+    const eventDate = toDate(data.timestamp);
 
-    if (!category) return;
+    if (!category || !eventDate) return;
 
-    stats[category].weight += weight;
-    stats[category].count += 1;
-    stats[category].prevWeight = 0;
-    stats[category].prevCount = 0;
+    if (eventDate >= currentStart && eventDate <= now) {
+      stats[category].weight += weight;
+      stats[category].count += 1;
+    } else if (eventDate >= previousStart && eventDate < currentStart) {
+      stats[category].prevWeight += weight;
+      stats[category].prevCount += 1;
+    }
   });
 
   return stats;
