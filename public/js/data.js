@@ -46,8 +46,10 @@ export async function fetchCurrentStats() {
   const stats = createEmptyStats();
   const snapshot = await getDocs(collection(db, 'waste_logs'));
   const now = new Date();
+
   const currentStart = getStartOfDay(now);
   currentStart.setDate(currentStart.getDate() - 6);
+
   const previousStart = new Date(currentStart);
   previousStart.setDate(previousStart.getDate() - 7);
 
@@ -57,12 +59,12 @@ export async function fetchCurrentStats() {
     const weight = normalizePositiveNumber(data.peso_g);
     const eventDate = toDate(data.timestamp);
 
-    if (!category || !eventDate) return;
+    if (!category) return;
 
-    if (eventDate >= currentStart && eventDate <= now) {
-      stats[category].weight += weight;
-      stats[category].count += 1;
-    } else if (eventDate >= previousStart && eventDate < currentStart) {
+    stats[category].weight += weight;
+    stats[category].count += 1;
+
+    if (eventDate && eventDate >= previousStart && eventDate < currentStart) {
       stats[category].prevWeight += weight;
       stats[category].prevCount += 1;
     }
