@@ -3,6 +3,7 @@ require("dotenv").config();
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const cors = require("cors")({ origin: true });
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -106,56 +107,58 @@ exports.analizarDashboard = onRequest(
 exports.preguntarDashboard = onRequest(
   { region: "us-central1" },
   async (req, res) => {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Metodo no permitido" });
-    }
-
-    try {
-      const { pregunta } = req.body;
-
-      if (!pregunta || typeof pregunta !== "string" || !pregunta.trim()) {
-        return res.status(400).json({ error: "pregunta invalida" });
+    cors(req, res, async () => {
+      if (req.method !== "POST") {
+        return res.status(405).json({ error: "Metodo no permitido" });
       }
 
-      const filtros = interpretarPreguntaDashboard(pregunta);
-      let query = db
-        .collection("waste_logs")
-        .where("timestamp", ">=", filtros.desde)
-        .where("timestamp", "<=", filtros.hasta);
+      try {
+        const { pregunta } = req.body;
 
-      if (filtros.categoria) {
-        query = query.where("categoria", "==", filtros.categoria);
+        if (!pregunta || typeof pregunta !== "string" || !pregunta.trim()) {
+          return res.status(400).json({ error: "pregunta invalida" });
+        }
+
+        const filtros = interpretarPreguntaDashboard(pregunta);
+        let query = db
+          .collection("waste_logs")
+          .where("timestamp", ">=", filtros.desde)
+          .where("timestamp", "<=", filtros.hasta);
+
+        if (filtros.categoria) {
+          query = query.where("categoria", "==", filtros.categoria);
+        }
+
+        const snapshot = await query.get();
+        const totalPeso = snapshot.docs.reduce((total, doc) => {
+          const peso = Number(doc.data().peso_g) || 0;
+          return total + peso;
+        }, 0);
+
+        const total_peso_g = redondear(totalPeso);
+        const total_registros = snapshot.size;
+
+        const prompt = construirPromptPreguntaDashboard(
+          pregunta,
+          total_peso_g,
+          total_registros
+        );
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const result = await model.generateContent(prompt);
+        const respuesta = result.response.text();
+
+        return res.status(200).json({
+          respuesta,
+          total_peso_g,
+          total_registros,
+        });
+      } catch (error) {
+        console.error("ERROR preguntarDashboard:", error);
+        return res.status(500).json({
+          error: error.message,
+        });
       }
-
-      const snapshot = await query.get();
-      const totalPeso = snapshot.docs.reduce((total, doc) => {
-        const peso = Number(doc.data().peso_g) || 0;
-        return total + peso;
-      }, 0);
-
-      const total_peso_g = redondear(totalPeso);
-      const total_registros = snapshot.size;
-
-      const prompt = construirPromptPreguntaDashboard(
-        pregunta,
-        total_peso_g,
-        total_registros
-      );
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      result = await model.generateContent(prompt);
-      const respuesta = result.response.text();
-
-      return res.status(200).json({
-        respuesta,
-        total_peso_g,
-        total_registros,
-      });
-    } catch (error) {
-      console.error("ERROR preguntarDashboard:", error);
-      return res.status(500).json({
-        error: error.message,
-      });
-    }
+    });
   }
 );
 
