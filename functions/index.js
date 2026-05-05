@@ -3,6 +3,7 @@ require("dotenv").config();
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const sharp = require("sharp");
 const cors = require("cors")({ origin: true });
 
 admin.initializeApp();
@@ -16,7 +17,7 @@ exports.recibirResiduo = onRequest(
       return res.status(405).json({ error: "Metodo no permitido" });
     }
 
-    const { objeto, categoria, peso_g, gas_level, timestamp } = req.body;
+    const { objeto, categoria, peso_g, gas_level, timestamp, imagen_base64 } = req.body;
 
     const categoriasPermitidas = ["plastico", "papel", "organico", "otros"];
 
@@ -43,6 +44,39 @@ exports.recibirResiduo = onRequest(
       return res.status(400).json({ error: "timestamp invalido" });
     }
 
+    let imagen_url = null;
+
+    if (imagen_base64 && typeof imagen_base64 === "string" && imagen_base64.trim()) {
+      const buffer = Buffer.from(imagen_base64, "base64");
+      const pixeles = buffer.slice(54);
+
+      if (pixeles.length !== 150528) {
+        return res.status(400).json({ error: "imagen con tamaño invalido" });
+      }
+
+      try {
+        const pngBuffer = await sharp(pixeles, {
+          raw: { width: 224, height: 224, channels: 3 },
+        }).png().toBuffer();
+        const bucket = admin.storage().bucket();
+        const ruta = `imagenes/${Date.now()}.png`;
+        const archivo = bucket.file(ruta);
+
+        await archivo.save(pngBuffer, {
+          metadata: { contentType: "image/png" },
+        });
+
+        const urls = await archivo.getSignedUrl({
+          action: "read",
+          expires: "01-01-2100",
+        });
+        imagen_url = urls[0];
+      } catch (error) {
+        console.error("ERROR imagen:", error);
+        imagen_url = null;
+      }
+    }
+
     try {
       await db.collection("waste_logs").add({
         objeto: objeto.trim(),
@@ -50,6 +84,7 @@ exports.recibirResiduo = onRequest(
         peso_g: peso,
         gas_level: gas,
         timestamp: fecha,
+        imagen_url,
       });
 
       return res.status(200).json({
