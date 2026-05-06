@@ -17,13 +17,9 @@ exports.recibirResiduo = onRequest(
       return res.status(405).json({ error: "Metodo no permitido" });
     }
 
-    const { objeto, categoria, peso_g, gas_level, timestamp, imagen_base64 } = req.body;
+    const { categoria, peso_g, gas_level, timestamp, imagen_base64 } = req.body;
 
     const categoriasPermitidas = ["plastico", "papel", "organico", "otros"];
-
-    if (!objeto || typeof objeto !== "string" || !objeto.trim()) {
-      return res.status(400).json({ error: "objeto invalido" });
-    }
 
     if (!categoriasPermitidas.includes(categoria)) {
       return res.status(400).json({ error: "Categoria invalida" });
@@ -79,7 +75,7 @@ exports.recibirResiduo = onRequest(
 
     try {
       await db.collection("waste_logs").add({
-        objeto: objeto.trim(),
+        objeto: null,
         categoria,
         peso_g: peso,
         gas_level: gas,
