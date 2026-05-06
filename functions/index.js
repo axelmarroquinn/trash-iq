@@ -336,7 +336,10 @@ exports.analizarImagenes = onRequest(
               text: "Eres un clasificador de residuos domésticos. Observa la imagen y responde ÚNICAMENTE con el nombre del objeto que ves en español. Debe ser una respuesta corta, máximo 4 palabras. Ejemplos: botella de plástico, cáscara de aguacate, caja de cartón, bolsa plástica. Sin explicaciones, sin puntos, solo el nombre del objeto.",
             },
           ]);
-          const objeto = result.response.text().trim();
+          const rawText = result.response.text().trim();
+          const objeto = rawText.includes("THOUGHTS:")
+            ? rawText.split(/THOUGHTS:.*?\n/s).pop().trim()
+            : rawText;
 
           await db.collection("waste_logs").doc(docId).update({ objeto });
           procesados += 1;
