@@ -4,17 +4,18 @@ const PREGUNTAR_DASHBOARD_ENDPOINT =
 export function initChat() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSendBtn');
+  const historial = [];
 
-  sendBtn.addEventListener('click', handleSend);
+  sendBtn.addEventListener('click', () => handleSend(historial));
   input.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      handleSend(historial);
     }
   });
 }
 
-async function handleSend() {
+async function handleSend(historial) {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSendBtn');
   const text = input.value.trim();
@@ -27,7 +28,7 @@ async function handleSend() {
   const typingEl = appendTyping();
 
   try {
-    const response = await preguntarDashboard(text);
+    const response = await preguntarDashboard(text, historial);
     typingEl.remove();
     appendMessage('ai', response);
   } catch (error) {
@@ -39,13 +40,16 @@ async function handleSend() {
   }
 }
 
-async function preguntarDashboard(pregunta) {
+async function preguntarDashboard(pregunta, historial) {
+  historial.push({ role: 'user', content: pregunta });
+  const historialReciente = historial.slice(-10);
+
   const response = await fetch(PREGUNTAR_DASHBOARD_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ pregunta }),
+    body: JSON.stringify({ pregunta, historial: historialReciente }),
   });
 
   if (!response.ok) {
@@ -58,20 +62,13 @@ async function preguntarDashboard(pregunta) {
     throw new Error('Respuesta invalida');
   }
 
+  historial.push({ role: 'assistant', content: data.respuesta });
+
   return formatearRespuestaDashboard(data);
 }
 
 function formatearRespuestaDashboard(data) {
-  const respuesta = limpiarRespuestaIA(data.respuesta);
-
-  if (data.total_peso_g === null || data.total_registros === null) {
-    return respuesta;
-  }
-
-  const totalPeso = Number(data.total_peso_g).toLocaleString('es-GT');
-  const totalRegistros = Number(data.total_registros).toLocaleString('es-GT');
-  const labelRegistros = data.total_registros === 1 ? 'registro' : 'registros';
-  return `${respuesta} Total: ${totalPeso} g en ${totalRegistros} ${labelRegistros}.`;
+  return limpiarRespuestaIA(data.respuesta);
 }
 
 function limpiarRespuestaIA(text) {
