@@ -18,6 +18,8 @@ exports.recibirResiduo = onRequest(
     }
 
     const { categoria, peso_g, gas_level, timestamp, imagen_base64 } = req.body;
+    console.log("BODY KEYS:", Object.keys(req.body));
+    console.log("IMAGEN_BASE64 TIPO:", typeof imagen_base64, "LONGITUD:", imagen_base64?.length ?? "undefined");
 
     const categoriasPermitidas = ["plastico", "papel", "organico", "otros"];
 
@@ -280,6 +282,79 @@ exports.preguntarDashboard = onRequest(
         });
       }
     });
+  }
+);
+
+exports.analizarImagenes = onRequest(
+  { region: "us-central1" },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Metodo no permitido" });
+    }
+
+    try {
+      const snapshot = await db
+        .collection("waste_logs")
+        .where("objeto", "==", null)
+        .where("imagen_url", "!=", null)
+        .limit(10)
+        .get();
+
+      if (snapshot.empty) {
+        return res.status(200).json({
+          message: "Sin imagenes pendientes",
+          procesados: 0,
+        });
+      }
+
+      let procesados = 0;
+
+      for (const doc of snapshot.docs) {
+        const docId = doc.id;
+        const data = doc.data();
+        const imagen_url = data.imagen_url;
+
+        try {
+          const response = await fetch(imagen_url);
+
+          if (!response.ok) {
+            throw new Error(`Error al descargar imagen: ${response.status}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const base64 = buffer.toString("base64");
+          const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+          const result = await model.generateContent([
+            {
+              inlineData: {
+                mimeType: "image/png",
+                data: base64,
+              },
+            },
+            {
+              text: "Eres un clasificador de residuos domésticos. Observa la imagen y responde ÚNICAMENTE con el nombre del objeto que ves en español. Debe ser una respuesta corta, máximo 4 palabras. Ejemplos: botella de plástico, cáscara de aguacate, caja de cartón, bolsa plástica. Sin explicaciones, sin puntos, solo el nombre del objeto.",
+            },
+          ]);
+          const objeto = result.response.text().trim();
+
+          await db.collection("waste_logs").doc(docId).update({ objeto });
+          procesados += 1;
+        } catch (error) {
+          console.error("ERROR analizarImagenes documento:", error);
+        }
+      }
+
+      return res.status(200).json({
+        message: "Analisis completado",
+        procesados,
+      });
+    } catch (error) {
+      console.error("ERROR analizarImagenes:", error);
+      return res.status(500).json({
+        error: error.message,
+      });
+    }
   }
 );
 
