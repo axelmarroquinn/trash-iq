@@ -76,7 +76,7 @@ exports.recibirResiduo = onRequest(
     }
 
     try {
-      await db.collection("waste_logs").add({
+      const docRef = await db.collection("waste_logs").add({
         objeto: null,
         categoria,
         peso_g: peso,
@@ -84,6 +84,10 @@ exports.recibirResiduo = onRequest(
         timestamp: fecha,
         imagen_url,
       });
+
+      if (imagen_url) {
+        analizarUnaImagen(docRef.id, imagen_url);
+      }
 
       return res.status(200).json({
         success: true,
@@ -337,9 +341,12 @@ exports.analizarImagenes = onRequest(
             },
           ]);
           const rawText = result.response.text().trim();
-          const objeto = rawText.includes("THOUGHTS:")
-            ? rawText.split(/THOUGHTS:.*?\n/s).pop().trim()
-            : rawText;
+          const objeto = rawText
+            .replace(/^.*?(THOUGHTS?:.*?\n)+/s, "")
+            .split("\n")
+            .filter(line => line.trim().length > 0)
+            .pop()
+            .trim();
 
           await db.collection("waste_logs").doc(docId).update({ objeto });
           procesados += 1;
@@ -360,6 +367,43 @@ exports.analizarImagenes = onRequest(
     }
   }
 );
+
+async function analizarUnaImagen(docId, imagen_url) {
+  try {
+    const response = await fetch(imagen_url);
+
+    if (!response.ok) {
+      throw new Error(`Error al descargar imagen: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString("base64");
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: "image/png",
+          data: base64,
+        },
+      },
+      {
+        text: "Eres un clasificador de residuos domésticos. Observa la imagen y responde ÚNICAMENTE con el nombre del objeto que ves en español. Debe ser una respuesta corta, máximo 4 palabras. Ejemplos: botella de plástico, cáscara de aguacate, caja de cartón, bolsa plástica. Sin explicaciones, sin puntos, solo el nombre del objeto.",
+      },
+    ]);
+    const rawText = result.response.text().trim();
+    const objeto = rawText
+      .replace(/^.*?(THOUGHTS?:.*?\n)+/s, "")
+      .split("\n")
+      .filter(line => line.trim().length > 0)
+      .pop()
+      .trim();
+
+    await db.collection("waste_logs").doc(docId).update({ objeto });
+  } catch (error) {
+    console.error("ERROR analizarUnaImagen:", error);
+  }
+}
 
 function construirMetricas(docs, periodo, desde, hasta) {
   const metricas = {
