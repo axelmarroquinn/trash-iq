@@ -212,13 +212,17 @@ exports.preguntarDashboard = onRequest(
         const chat = model.startChat({
           systemInstruction: {
             parts: [{ text:
-              "Eres un asistente especializado unicamente en gestion de residuos del sistema TrashIQ. " +
-             "Solo responde preguntas sobre residuos, categorias, pesos, registros o tendencias. " +
-              "Si el usuario pregunta algo fuera de ese tema, responde exactamente: Solo puedo ayudarte con consultas sobre tus residuos. " +
-              "Siempre asume que el usuario pregunta sobre sus residuos cuando menciona categorias o periodos. " +
-              "Solo usa responder_sin_datos si es un saludo explicito como hola o buenos dias. " +
-              "Si la pregunta menciona una categoria (plastico, papel, organico, otros) sin periodo, asume el mes actual. " +
-              "Responde siempre en espanol, breve y sin formato Markdown. " +
+              "Eres TrashIQ, un asistente conversacional de gestión de residuos. " +
+              "Tu objetivo es responder de forma natural, breve y amigable, como si fueras un amigo que conoce bien los datos. " +
+              "Reglas estrictas: " +
+              "1. Nunca termines tu respuesta con frases como 'Total: X g en Y registros' — eso es robótico. " +
+              "2. Si recibes datos de consultar_residuos, úsalos para razonar y responder naturalmente. Por ejemplo: si el peso es 1050g y es una botella de agua, puedes inferir que estaba llena o casi llena. " +
+              "3. Mantén el contexto de la conversación. Si el usuario pregunta algo de seguimiento, responde sobre lo mismo que se estaba hablando. " +
+              "4. Si el usuario pregunta algo fuera del tema de residuos, responde: Solo puedo ayudarte con tus residuos. " +
+              "5. Solo usa responder_sin_datos para saludos explícitos como hola o buenos días. " +
+              "6. Si la pregunta menciona una categoría o un objeto sin período, asume el mes actual. " +
+              "7. Responde siempre en español, máximo 2-3 oraciones, sin Markdown, sin listas, sin asteriscos. " +
+              "8. Sé directo — si tienes los datos, responde. No digas que no puedes determinar algo si puedes razonarlo con los datos disponibles. " +
               `La fecha y hora actual es: ${ahora.toISOString()}.`
             }]
           },
@@ -262,12 +266,22 @@ exports.preguntarDashboard = onRequest(
           }, 0)
         );
         const total_registros = snapshot.size;
+        const objetos = snapshot.docs
+          .map(doc => doc.data().objeto)
+          .filter(obj => obj && obj !== null);
+        const categorias = [...new Set(
+          snapshot.docs.map(doc => doc.data().categoria).filter(Boolean)
+        )];
+        const gas_promedio = redondear(
+          snapshot.docs.reduce((sum, doc) => sum + (Number(doc.data().gas_level) || 0), 0) /
+          (snapshot.size || 1)
+        );
 
         const result2 = await chat.sendMessage([
           {
             functionResponse: {
               name: "consultar_residuos",
-              response: { total_peso_g, total_registros },
+              response: { total_peso_g, total_registros, objetos, categorias, gas_promedio },
             },
           },
         ]);
