@@ -150,7 +150,7 @@ exports.preguntarDashboard = onRequest(
       }
 
       try {
-        const { pregunta } = req.body;
+        const { pregunta, historial = [] } = req.body;
 
         if (!pregunta || typeof pregunta !== "string" || !pregunta.trim()) {
           return res.status(400).json({ error: "pregunta invalida" });
@@ -226,6 +226,12 @@ exports.preguntarDashboard = onRequest(
               `La fecha y hora actual es: ${ahora.toISOString()}.`
             }]
           },
+          history: historial
+            .filter(m => m.role === "user" || m.role === "assistant")
+            .map(m => ({
+              role: m.role === "assistant" ? "model" : "user",
+              parts: [{ text: m.content }],
+            })),
         });
 
         const result1 = await chat.sendMessage(pregunta);
