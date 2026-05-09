@@ -18,8 +18,6 @@ exports.recibirResiduo = onRequest(
     }
 
     const { categoria, peso_g, gas_level, timestamp, imagen_base64 } = req.body;
-    console.log("BODY KEYS:", Object.keys(req.body));
-    console.log("IMAGEN_BASE64 TIPO:", typeof imagen_base64, "LONGITUD:", imagen_base64?.length ?? "undefined");
 
     const categoriasPermitidas = ["plastico", "papel", "organico", "otros"];
 
@@ -220,9 +218,14 @@ exports.preguntarDashboard = onRequest(
               "3. Mantén el contexto de la conversación. Si el usuario pregunta algo de seguimiento, responde sobre lo mismo que se estaba hablando. " +
               "4. Si el usuario pregunta algo fuera del tema de residuos, responde: Solo puedo ayudarte con tus residuos. " +
               "5. Solo usa responder_sin_datos para saludos explícitos como hola o buenos días. " +
-              "6. Si la pregunta menciona una categoría o un objeto sin período, asume el mes actual. " +
+              "6. Si la pregunta no menciona un período específico, SIEMPRE asume el mes actual completo. " +
+              "Nunca uses solo los últimos 7 días como período por defecto. " +
+              "El mes actual empieza el día 1 del mes en curso a las 00:00:00. " +
               "7. Responde siempre en español, máximo 2-3 oraciones, sin Markdown, sin listas, sin asteriscos. " +
               "8. Sé directo — si tienes los datos, responde. No digas que no puedes determinar algo si puedes razonarlo con los datos disponibles. " +
+              "9. IMPORTANTE: Si el array historial tiene mensajes previos, NUNCA uses responder_sin_datos. " +
+              "Las preguntas de seguimiento como 'estaba llena?', '¿y qué más?', '¿cuánto pesaba?' " +
+              "siempre deben usar consultar_residuos asumiendo el mismo período de la pregunta anterior. " +
               `La fecha y hora actual es: ${ahora.toISOString()}.`
             }]
           },
@@ -238,9 +241,7 @@ exports.preguntarDashboard = onRequest(
         const call = result1.response.functionCalls()?.[0];
 
         if (!call || call.name === "responder_sin_datos") {
-          const mensaje =
-            call?.args?.mensaje ||
-            "Hola. Puedes preguntarme sobre tus residuos. Por ejemplo: Cuanto tire esta semana?";
+          const mensaje = call?.args?.mensaje || result1.response.text() || "";
           return res.status(200).json({
             respuesta: limpiarRespuestaIA(mensaje),
             total_peso_g: null,
